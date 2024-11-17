@@ -1,54 +1,211 @@
-.source-item {
+/* Basis Layout */
+.wrap {
+    margin: 20px 0;
+}
+
+.card {
     background: #fff;
-    border: 1px solid #ccd0d4;
+    padding: 20px;
+    border: 1px solid #ddd;
+    max-width:100% !important;
+}
+
+/* Quellen Liste */
+.source-item {
+    display: grid;
+    grid-template-columns: 30px 3fr 1fr 1fr 1fr 200px;
+    gap: 15px;
+    align-items: center;
     padding: 15px;
-    margin-bottom: 20px;
-    border-radius: 3px;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    margin-bottom: 10px;
 }
 
-.source-item h3 {
-    margin-top: 0;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
+/* Drag Handle */
+.drag-handle {
+    color: #999;
+    cursor: move;
+    text-align: center;
 }
 
-.source-item .form-table {
-    margin-top: 0;
+/* Eingabefelder */
+.source-fields {
+    display: contents; /* Erlaubt den Kindern, direkt am Grid teilzunehmen */
 }
 
-.source-item .button {
-    margin-right: 10px;
+.source-field {
+    position: relative;
 }
 
-.source-item .remove-source {
-    color: #a00;
-}
-
-.source-item .remove-source:hover {
-    color: #dc3232;
-}
-
-.author-dropdown,
-.category-dropdown {
-    min-width: 200px;
-    max-width: 400px;
-    height: 35px !important;
-}
-
-.form-table td .description {
-    margin-top: 5px;
+.source-field label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    font-size: 13px;
     color: #666;
 }
 
-/* Optionale Styling für Select2 Integration */
-.select2-container {
-    min-width: 200px;
+.source-field input,
+.source-field select {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
 }
 
-.select2-results__option {
-    padding: 6px 12px;
+/* Slider Styling */
+.slider-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-.select2-results__option[aria-selected=true] {
-    background-color: #f0f0f0;
+.post-count-slider {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: #ddd;
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.post-count-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #2271b1;
+    cursor: pointer;
+}
+
+.post-count-display {
+    min-width: 30px;
+    text-align: right;
+    font-weight: 600;
+    color: #2271b1;
+}
+
+/* Buttons */
+.source-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.sync-now,
+.remove-source {
+    padding: 4px 12px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.sync-now {
+    background: #2271b1;
+    color: #fff;
+    border-color: #2271b1;
+}
+
+.remove-source {
+    color: #dc3232;
+}
+
+/* Neue Quelle Button */
+#add-source {
+    width: 100%;
+    padding: 10px;
+    margin: 15px 0;
+    background: #f0f0f1;
+    border: 1px dashed #999;
+    cursor: pointer;
+}
+
+/* Submit Button */
+.submit {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #ddd;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 1200px) {
+    .source-item {
+        grid-template-columns: 30px 2fr 1fr 1fr 150px;
+    }
+    
+    .source-field:nth-child(4) {
+        grid-column: 2 / -1;
+    }
+}
+
+@media screen and (max-width: 782px) {
+    .source-item {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .drag-handle {
+        display: none;
+    }
+    
+    .source-controls {
+        justify-content: stretch;
+    }
+    
+    .source-controls button {
+        flex: 1;
+    }
+}
+
+/* Progress Bar */
+.sync-progress {
+    margin-top: 15px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.progress-bar {
+    height: 4px;
+    background: #e2e4e7;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    width: 0;
+    background: #2271b1;
+    transition: width 0.3s ease-out;
+}
+
+.progress-bar-fill.success {
+    background: #46b450;
+}
+
+.progress-bar-fill.error {
+    background: #dc3232;
+}
+
+.progress-text {
+    font-size: 13px;
+    color: #50575e;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.progress-text .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.progress-text .dashicons-yes {
+    color: #46b450;
+}
+
+.progress-text .dashicons-no {
+    color: #dc3232;
 } 

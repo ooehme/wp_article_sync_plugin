@@ -1,127 +1,114 @@
+<?php
+if (!defined('ABSPATH')) exit;
+?>
+
 <div class="wrap">
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
     
-    <form method="post" action="options.php">
-        <?php settings_fields('article-sync-settings'); ?>
+    <div class="card">
+        <h2>
+            <?php _e('Quellen verwalten', 'article-sync'); ?>
+            <span class="tooltip" data-tip="<?php _e('Fügen Sie WordPress-Seiten hinzu, von denen Artikel synchronisiert werden sollen.', 'article-sync'); ?>">?</span>
+        </h2>
         
-        <div id="article-sources-container">
+        <form method="post" action="options.php" id="sources-form">
             <?php 
-            $sources = get_option('article_sync_sources', array());
-            if (empty($sources)): ?>
-                <div class="source-item">
-                    <h3>Neue Quelle</h3>
-                    <table class="form-table">
-                        <tr>
-                            <th>WordPress URL</th>
-                            <td>
-                                <input type="url" name="article_sync_sources[0][url]" 
-                                       class="regular-text" required 
-                                       placeholder="https://example.com">
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Autor</th>
-                            <td>
-                                <?php wp_dropdown_users(array(
-                                    'name' => 'article_sync_sources[0][author]',
-                                    'role__in' => array('administrator', 'editor', 'author'),
-                                    'show_option_none' => 'Autor auswählen'
-                                )); ?>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Kategorie</th>
-                            <td>
-                                <?php wp_dropdown_categories(array(
-                                    'name' => 'article_sync_sources[0][category]',
-                                    'show_option_none' => 'Kategorie auswählen',
-                                    'hide_empty' => 0
-                                )); ?>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Anzahl Beiträge</th>
-                            <td>
-                                <input type="number" 
-                                       name="article_sync_sources[0][posts_per_sync]" 
-                                       value="10" 
-                                       min="1" 
-                                       max="100" 
-                                       class="small-text">
-                                <p class="description">
-                                    Anzahl der Beiträge pro Synchronisation (1-100)
-                                </p>
-                            </td>
-                        </tr>
-                    </table>
-                    <button type="button" class="button remove-source">Quelle entfernen</button>
-                </div>
-            <?php else: ?>
-                <?php foreach ($sources as $index => $source): ?>
-                    <div class="source-item">
-                        <h3>Quelle #<?php echo $index + 1; ?></h3>
-                        <table class="form-table">
-                            <tr>
-                                <th>WordPress URL</th>
-                                <td>
-                                    <input type="url" 
-                                           name="article_sync_sources[<?php echo $index; ?>][url]" 
-                                           value="<?php echo esc_url($source['url']); ?>" 
-                                           class="regular-text" required>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>Autor</th>
-                                <td>
-                                    <?php wp_dropdown_users(array(
-                                        'name' => "article_sync_sources[{$index}][author]",
-                                        'selected' => $source['author'],
-                                        'role__in' => array('administrator', 'editor', 'author')
-                                    )); ?>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>Kategorie</th>
-                                <td>
-                                    <?php wp_dropdown_categories(array(
-                                        'name' => "article_sync_sources[{$index}][category]",
-                                        'selected' => $source['category'],
-                                        'hide_empty' => 0
-                                    )); ?>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>Anzahl Beiträge</th>
-                                <td>
-                                    <input type="number" 
-                                           name="article_sync_sources[<?php echo $index; ?>][posts_per_sync]" 
-                                           value="<?php echo isset($source['posts_per_sync']) ? esc_attr($source['posts_per_sync']) : '10'; ?>" 
+            settings_fields('article_sync_sources');
+            ?>
+            
+            <div id="source-list" class="sortable">
+                <?php 
+                $sources = get_option('article_sync_sources', []);
+                foreach ($sources as $index => $source): 
+                ?>
+                    <div class="source-item" data-id="<?php echo $index; ?>">
+                        <div class="drag-handle">⋮</div>
+                        <div class="source-fields">
+                            <div class="source-field">
+                                <label><?php _e('WordPress URL:', 'article-sync'); ?></label>
+                                <input type="url" 
+                                       name="article_sync_sources[<?php echo $index; ?>][url]" 
+                                       value="<?php echo esc_url($source['url'] ?? ''); ?>"
+                                       class="regular-text source-url" 
+                                       required
+                                       pattern="https?://.+">
+                            </div>
+                            
+                            <div class="source-field">
+                                <label>
+                                    <?php _e('Anzahl der Beiträge:', 'article-sync'); ?>
+                                    <span class="post-count-display">
+                                        <?php echo esc_attr($source['post_count'] ?? 10); ?>
+                                    </span>
+                                </label>
+                                <div class="slider-container">
+                                    <input type="range" 
+                                           name="article_sync_sources[<?php echo $index; ?>][post_count]" 
+                                           value="<?php echo esc_attr($source['post_count'] ?? 10); ?>"
                                            min="1" 
-                                           max="100" 
-                                           class="small-text">
-                                    <p class="description">
-                                        Anzahl der Beiträge pro Synchronisation (1-100)
-                                    </p>
-                                </td>
-                            </tr>
-                        </table>
-                        <button type="button" class="button sync-source" data-source="<?php echo $index; ?>">
-                            Jetzt synchronisieren
-                        </button>
-                        <button type="button" class="button remove-source">
-                            Quelle entfernen
-                        </button>
+                                           max="100"
+                                           class="post-count-slider">
+                                </div>
+                            </div>
+                            
+                            <div class="source-field">
+                                <label><?php _e('Kategorie:', 'article-sync'); ?></label>
+                                <select name="article_sync_sources[<?php echo $index; ?>][category]">
+                                    <option value="0"><?php _e('-- Keine Kategorie --', 'article-sync'); ?></option>
+                                    <?php 
+                                    $categories = get_categories(['hide_empty' => false]);
+                                    foreach ($categories as $category) {
+                                        printf(
+                                            '<option value="%d" %s>%s</option>',
+                                            $category->term_id,
+                                            selected($source['category'] ?? 0, $category->term_id, false),
+                                            esc_html($category->name)
+                                        );
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            
+                            <div class="source-field">
+                                <label><?php _e('Autor:', 'article-sync'); ?></label>
+                                <select name="article_sync_sources[<?php echo $index; ?>][author]">
+                                    <?php 
+                                    $selected_author = $source['author'] ?? get_current_user_id();
+                                    $users = get_users(['role__in' => ['administrator', 'editor', 'author']]);
+                                    foreach ($users as $user) {
+                                        printf(
+                                            '<option value="%d" %s>%s</option>',
+                                            $user->ID,
+                                            selected($selected_author, $user->ID, false),
+                                            esc_html($user->display_name)
+                                        );
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="source-controls">
+                            <button type="button" class="button sync-now" 
+                                    data-url="<?php echo esc_url($source['url'] ?? ''); ?>">
+                                <?php _e('Synchronisieren', 'article-sync'); ?>
+                            </button>
+                            <button type="button" class="button remove-source">
+                                <span class="dashicons dashicons-trash"></span>
+                            </button>
+                        </div>
                     </div>
                 <?php endforeach; ?>
-            <?php endif; ?>
-        </div>
+            </div>
 
-        <p>
-            <button type="button" class="button button-secondary" id="add-new-source">
-                Neue Quelle hinzufügen
-            </button>
-        </p>
+            <p>
+                <button type="button" class="button button-secondary" id="add-source">
+                    <span class="dashicons dashicons-plus-alt2"></span>
+                    <?php _e('Neue Quelle hinzufügen', 'article-sync'); ?>
+                </button>
+            </p>
 
-        <?php submit_button('Alle Quellen speichern'); ?>
-    </form>
+            <?php submit_button(__('Alle Quellen speichern', 'article-sync')); ?>
+        </form>
+    </div>
 </div>
