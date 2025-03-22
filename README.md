@@ -1,80 +1,70 @@
 # WordPress Article Sync Plugin
 
-A WordPress plugin that allows you to synchronize articles from multiple external WordPress websites to your own WordPress installation.
+## Overview
 
-## Description
+Article Sync is a powerful WordPress plugin that automatically collects and republishes content from other WordPress sites. It provides a seamless way to aggregate content from multiple sources while maintaining proper attribution and preserving the original publication details.
 
-This plugin enables you to automatically import articles from other WordPress websites while maintaining proper attribution through backlinks to the original content. Each source can be configured individually with its own author, category, and number of posts to sync.
+## Key Features
 
-## Features
+### Content Synchronization
+- **Multi-Source Support**: Connect to multiple WordPress sites and import their content
+- **Selective Importing**: Configure how many posts to import from each source
+- **Category Mapping**: Assign specific categories to content from different sources
+- **Author Attribution**: Set default authors for imported content
+- **Scheduled Synchronization**: Automatically check for and import new content on a customizable schedule
 
-- **Multiple Sources**: Add and manage multiple WordPress websites as content sources
-- **Custom Settings per Source**:
-  - Assign specific authors for imported content
-  - Set target categories for imported posts
-  - Configure number of posts to sync (1-100 posts)
-- **Media Handling**:
-  - Automatic import of featured images
-  - Creation of proper WordPress media attachments
-- **Content Attribution**:
-  - Automatic backlinks to original articles
-  - Preservation of original publication dates
-- **User-Friendly Interface**:
-  - Easy-to-use admin interface
-  - Individual sync buttons per source
-  - Simple source management
+### Content Preservation
+- **Original Metadata**: Preserve original publication dates and times
+- **Featured Images**: Automatically import and set featured images
+- **Source Attribution**: Add automatic source attribution with links to original articles
+- **Custom Fields**: Store original article URLs for reference and attribution
 
-## Requirements
+### User-Friendly Administration
+- **Intuitive Interface**: Manage all your content sources from a clean, user-friendly dashboard
+- **Bulk Operations**: Synchronize all sources with a single click
+- **Individual Controls**: Synchronize specific sources as needed
+- **Detailed Logs**: Track synchronization history with comprehensive logging
 
-- WordPress 5.0 or higher
-- PHP 7.4 or higher
-- Source websites must have WordPress REST API enabled
+### Advanced Features
+- **Cron Integration**: Works with WordPress cron and external cron services
+- **Error Handling**: Robust error handling with detailed logging
+- **Performance Optimization**: Efficient synchronization that minimizes server load
+- **Developer Friendly**: Well-documented code with hooks for customization
 
-## Installation
+## Technical Details
 
-1. Upload the plugin files to the `/wp-content/plugins/article-sync` directory
-2. Activate the plugin through the 'Plugins' menu in WordPress
-3. Go to 'Article Sync' in the admin menu to configure your sources
+- **Requirements**: WordPress 5.0+, PHP 7.4+
+- **API Usage**: Utilizes the WordPress REST API for content retrieval
+- **Database Impact**: Minimal database overhead with efficient storage of external references
+- **Security**: Implements WordPress security best practices with proper data sanitization
 
-## Configuration
+## Use Cases
 
-### Adding a New Source
+- **Content Aggregation**: Create a central hub for content from multiple related sites
+- **News Portals**: Aggregate news from various sources into a single destination
+- **Multi-Site Management**: Republish content across a network of related websites
+- **Content Syndication**: Easily syndicate content from partner websites
 
-1. Navigate to the 'Article Sync' menu in your WordPress admin panel
-2. Click 'Add New Source'
-3. Configure the following settings:
-   - WordPress URL: The URL of the source website
-   - Author: Select who should be set as the author for imported posts
-   - Category: Choose the category for imported posts
-   - Posts per Sync: Set how many posts should be imported per sync (1-100)
-4. Click 'Save All Sources'
+## Getting Started
 
-### Synchronizing Content
+1. Install and activate the plugin through the WordPress admin interface
+2. Navigate to "Article Sync" in your admin menu
+3. Add your first source by providing the WordPress site URL
+4. Configure category mapping and author settings
+5. Click "Synchronize" to import content immediately or wait for the scheduled sync
 
-1. Go to the 'Article Sync' menu
-2. Find the source you want to sync
-3. Click the 'Sync Now' button
-4. Wait for the synchronization to complete
+## Customization
 
-## Technical Notes
+The plugin provides several filters and actions for developers to customize its behavior:
+- Modify how content is processed before importing
+- Customize the source attribution format
+- Extend logging capabilities
+- Implement custom error handling
 
-- Uses WordPress REST API for fetching content
-- Implements proper error handling and duplicate checking
-- Maintains original post dates and times
-- Creates proper media attachments for featured images
-- Supports SSL connections
+## Support and Contributions
 
-## Security
+This plugin is actively maintained. For support requests, bug reports, or feature suggestions, please use the GitHub issues section. Contributions via pull requests are welcome.
 
-- Implements WordPress nonces for AJAX requests
-- Requires proper admin capabilities for management
-- Sanitizes all input and output
-- Validates external URLs and content
+---
 
-## Support
-
-For bug reports and feature requests, please use the GitHub issue tracker.
-
-## License
-
-This plugin is licensed under the GPL v2 or later. 
+*Article Sync respects content ownership and is designed for use with authorized content sources. Always ensure you have permission to republish content from the sources you connect to.*
