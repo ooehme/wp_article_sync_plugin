@@ -19,25 +19,51 @@
             $('#source-list').on('click', '.remove-source', this.removeSource.bind(this));
             $('#source-list').on('click', '.sync-now', this.syncSource.bind(this));
             $('#source-list').on('input', '.post-count-slider', this.updatePostCount);
+            $('#sync-all-sources').on('click', this.syncAllSources.bind(this));
+            
+            // Aktualisiere den Status des Sync-All-Buttons nach Änderungen
+            $('#sources-form').on('change', this.updateSyncAllButtonState.bind(this));
         },
 
         removeSource: function(e) {
             const $sourceItem = $(e.currentTarget).closest('.source-item');
-            if ($('.source-item').length > 1) {
-                $sourceItem.remove();
-                this.updateSourceIndices();
-            } else {
-                $sourceItem.find('input').val('');
-                $(e.currentTarget).hide();
+            $sourceItem.remove();
+            this.updateSourceIndices();
+            
+            // Prüfe, ob noch Quellen vorhanden sind
+            if ($('.source-item').length === 0) {
+                // Füge Nachricht ein, wenn keine Quellen mehr vorhanden sind
+                $('#source-list').html('<div class="no-sources-message"><p>' + 
+                    'Keine Quellen konfiguriert. Fügen Sie unten eine neue Quelle hinzu.' + 
+                    '</p></div>');
+                
+                // Deaktiviere den Sync-All-Button
+                $('#sync-all-sources').prop('disabled', true);
             }
         },
 
         addSource: function() {
+            // Entferne die "Keine Quellen" Nachricht, falls vorhanden
+            $('.no-sources-message').remove();
+            
             const index = $('#source-list .source-item').length;
             
             // Hole aktuelle Kategorien und Autoren
-            const categoryOptions = $('.category-select').first().html();
-            const authorOptions = $('.author-select').first().html();
+            let categoryOptions = '';
+            let authorOptions = '';
+            
+            // Wenn bereits Quellen existieren, kopiere die Optionen
+            if ($('.category-select').length > 0) {
+                categoryOptions = $('.category-select').first().html();
+                authorOptions = $('.author-select').first().html();
+            } else {
+                // Fallback-Optionen, falls keine Quellen existieren
+                categoryOptions = '<option value="0">-- Keine Kategorie --</option>';
+                
+                // Aktuelle Benutzer-ID als Autor
+                const currentUserId = 1; // Fallback, sollte in der Praxis dynamisch sein
+                authorOptions = `<option value="${currentUserId}">Admin</option>`;
+            }
             
             const template = `
                 <div class="source-item" data-id="${index}">
@@ -98,17 +124,28 @@
             `;
             
             $('#source-list').append(template);
+            
+            // Aktiviere den Sync-All-Button, da jetzt mindestens eine Quelle existiert
+            $('#sync-all-sources').prop('disabled', false);
         },
 
         syncSource: function(e) {
             const $button = $(e.currentTarget);
             const $sourceItem = $button.closest('.source-item');
-            const sourceUrl = $button.data('url');
+            let sourceUrl = $button.data('url');
             
+            // Wenn keine URL im data-Attribut, versuche sie aus dem Eingabefeld zu holen
             if (!sourceUrl) {
+                sourceUrl = $sourceItem.find('.source-url').val();
+            }
+            
+            if (!sourceUrl || !this.validateUrl(sourceUrl)) {
                 this.showMessage('error', articleSyncSettings.strings.invalidUrl);
                 return;
             }
+
+            // Aktualisiere das data-Attribut für zukünftige Klicks
+            $button.data('url', sourceUrl);
 
             // Deaktiviere Button während der Synchronisation
             $button.prop('disabled', true);
@@ -178,6 +215,94 @@
                 }
             });
         },
+        
+        syncAllSources: function() {
+            // Prüfe, ob Quellen vorhanden sind
+            if ($('.source-item').length === 0) {
+                this.showMessage('error', articleSyncSettings.strings.noSources);
+                return;
+            }
+            
+            // Deaktiviere Button während der Synchronisation
+            const $button = $('#sync-all-sources');
+            $button.prop('disabled', true);
+            
+            // Zeige den Fortschrittsbereich an
+            const $progressContainer = $('#sync-all-progress');
+            $progressContainer.show();
+            
+            // Hole Referenzen auf Fortschrittsbalken und Text
+            const $progressBar = $progressContainer.find('.progress-bar-fill');
+            const $progressText = $progressContainer.find('.progress-text');
+            
+            // Setze Fortschrittsbalken zurück
+            $progressBar.css('width', '0%').removeClass('success error');
+            $progressText.text('Synchronisiere alle Quellen...');
+            
+            // Animiere Fortschrittsbalken
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress > 90) clearInterval(progressInterval);
+                $progressBar.css('width', Math.min(progress, 90) + '%');
+            }, 500);
+            
+            // Führe AJAX-Anfrage aus
+            $.ajax({
+                url: articleSyncSettings.ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'sync_all_sources',
+                    nonce: articleSyncSettings.nonce
+                },
+                success: (response) => {
+                    clearInterval(progressInterval);
+                    $progressBar.css('width', '100%');
+                    
+                    if (response.success) {
+                        $progressBar.addClass('success');
+                        $progressText.html(
+                            `<span class="dashicons dashicons-yes"></span> ${response.data.message}`
+                        );
+                        
+                        // Zeige detaillierte Ergebnisse an
+                        const $resultsContent = $progressContainer.find('.sync-results-content');
+                        let resultsHtml = `
+                            <p>Erfolgreich synchronisierte Quellen: ${response.data.success} von ${response.data.total}</p>
+                            <p>Insgesamt importierte Artikel: ${response.data.articles}</p>
+                        `;
+                        
+                        // Füge Fehler hinzu, falls vorhanden
+                        if (response.data.errors && response.data.errors.length > 0) {
+                            resultsHtml += '<div class="sync-errors"><h5>Fehler:</h5><ul>';
+                            response.data.errors.forEach(error => {
+                                resultsHtml += `<li>${error}</li>`;
+                            });
+                            resultsHtml += '</ul></div>';
+                        }
+                        
+                        $resultsContent.html(resultsHtml);
+                        $progressContainer.find('.sync-results').show();
+                        
+                    } else {
+                        $progressBar.addClass('error');
+                        $progressText.html(
+                            `<span class="dashicons dashicons-no"></span> ${response.data.message}`
+                        );
+                    }
+                },
+                error: () => {
+                    clearInterval(progressInterval);
+                    $progressBar.css('width', '100%').addClass('error');
+                    $progressText.html(
+                        `<span class="dashicons dashicons-no"></span> ${articleSyncSettings.strings.syncAllError}`
+                    );
+                },
+                complete: () => {
+                    $button.prop('disabled', false);
+                }
+            });
+        },
 
         validateUrl: function(e) {
             const url = typeof e === 'string' ? e : $(e.currentTarget).val();
@@ -188,9 +313,19 @@
         updateSourceIndices: function() {
             $('.source-item').each(function(index) {
                 $(this).attr('data-id', index)
-                    .find('.source-url')
-                    .attr('name', `article_sync_sources[${index}][url]`);
+                    .find('input, select').each(function() {
+                        const name = $(this).attr('name');
+                        if (name) {
+                            $(this).attr('name', name.replace(/\[\d+\]/, `[${index}]`));
+                        }
+                    });
             });
+        },
+        
+        updateSyncAllButtonState: function() {
+            // Aktiviere oder deaktiviere den Sync-All-Button basierend auf vorhandenen Quellen
+            const hasValidSources = $('.source-item').length > 0;
+            $('#sync-all-sources').prop('disabled', !hasValidSources);
         },
 
         // Neue Kategorie hinzufügen

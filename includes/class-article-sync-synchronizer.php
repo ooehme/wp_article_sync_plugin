@@ -10,13 +10,79 @@ class ArticleSyncSynchronizer {
         $this->settings = $settings;
     }
 
+    /**
+     * Synchronisiert alle konfigurierten Quellen
+     * 
+     * @return array Ergebnis der Synchronisation
+     */
+    public function syncAllSources(): array {
+        $sources = get_option('article_sync_sources', []);
+        $results = [
+            'total_sources' => count($sources),
+            'successful_sources' => 0,
+            'total_articles' => 0,
+            'errors' => []
+        ];
+        
+        if (empty($sources)) {
+            $results['errors'][] = 'Keine Quellen konfiguriert';
+            return $results;
+        }
+        
+        foreach ($sources as $source) {
+            try {
+                // Stelle sicher, dass alle erforderlichen Felder vorhanden sind
+                if (empty($source['url'])) {
+                    $results['errors'][] = 'Quelle ohne URL übersprungen';
+                    continue;
+                }
+                
+                // Bereite die Optionen für die Synchronisation vor
+                $options = [
+                    'post_count' => absint($source['post_count'] ?? 10),
+                    'category'   => absint($source['category'] ?? 0),
+                    'author'     => absint($source['author'] ?? get_current_user_id()),
+                    'source_url' => $source['url']
+                ];
+                
+                // Protokolliere die Optionen für Debugging
+                error_log('Synchronizing source with options: ' . print_r($options, true));
+                
+                // Führe die Synchronisation durch
+                $result = $this->syncArticles($source['url'], $options);
+                
+                // Aktualisiere die Gesamtergebnisse
+                if (isset($result['success']) && $result['success'] > 0) {
+                    $results['successful_sources']++;
+                    $results['total_articles'] += $result['success'];
+                }
+                
+                // Füge eventuelle Fehler hinzu
+                if (!empty($result['errors'])) {
+                    foreach ($result['errors'] as $error) {
+                        $results['errors'][] = 'Fehler bei ' . $source['url'] . ': ' . $error;
+                    }
+                }
+                
+            } catch (Exception $e) {
+                $results['errors'][] = 'Fehler bei ' . $source['url'] . ': ' . $e->getMessage();
+            }
+        }
+        
+        return $results;
+    }
+
     public function syncArticles(string $sourceUrl, array $options = []): array {
         try {
+            // Sanitize options to ensure all required values are properly set
+            $options = $this->sanitizeOptions($options);
+            
             // Explizite Typkonvertierung für post_count
-            $postCount = (int) ($options['post_count'] ?? 10);
+            $postCount = (int) $options['post_count'];
             
             // Debug
             error_log("Requested post count: {$postCount}");
+            error_log("Category ID: " . $options['category']);
             
             $articles = $this->fetchArticles($sourceUrl, $postCount);
             
@@ -54,7 +120,7 @@ class ArticleSyncSynchronizer {
         return [
             'post_count' => max(1, min(100, absint($options['post_count'] ?? 10))),
             'category'   => absint($options['category'] ?? 0),
-            'author'     => $this->validateAuthor($options['author'] ?? get_current_user_id()),
+            'author'     => absint($options['author'] ?? get_current_user_id()),
             'source_url' => esc_url_raw($options['source_url'] ?? '')
         ];
     }
@@ -172,6 +238,38 @@ class ArticleSyncSynchronizer {
             // Speichere externe ID und Quelle als Meta
             update_post_meta($postId, 'external_article_id', $article['id']);
             update_post_meta($postId, 'external_source_url', $options['source_url']);
+            
+            // Speichere die URL zum Originalbeitrag
+            $originalUrl = '';
+            
+            // Verwende die direkte Link-URL, wenn verfügbar
+            if (!empty($article['link'])) {
+                $originalUrl = esc_url_raw($article['link']);
+            } 
+            // Alternativ konstruiere die URL aus der Quelle und dem Slug
+            else if (!empty($article['slug'])) {
+                $originalUrl = esc_url_raw(trailingslashit($options['source_url']) . $article['slug']);
+            }
+            
+            // Speichere die Original-URL als benutzerdefiniertes Feld
+            if (!empty($originalUrl)) {
+                update_post_meta($postId, 'original_article_url', $originalUrl);
+                
+                // Füge auch einen Hinweis am Ende des Beitrags hinzu
+                $postContent = get_post_field('post_content', $postId);
+                $sourceAttribution = sprintf(
+                    '<p class="article-source-attribution">%s <a href="%s" target="_blank" rel="noopener noreferrer">%s</a></p>',
+                    __('Quelle:', 'article-sync'),
+                    $originalUrl,
+                    parse_url($options['source_url'], PHP_URL_HOST)
+                );
+                
+                // Aktualisiere den Beitrag mit dem Quellhinweis
+                wp_update_post([
+                    'ID' => $postId,
+                    'post_content' => $postContent . $sourceAttribution
+                ]);
+            }
 
             return true;
 
@@ -275,4 +373,4 @@ class ArticleSyncSynchronizer {
 
         return $postId ? (int)$postId : null;
     }
-} 
+}
